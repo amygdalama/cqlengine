@@ -18,42 +18,54 @@ class java {
     }
 }
 
+class pgpkeys {
+    include apt
+
+    apt::key { 'key1':
+        ensure      => present,
+        key         => 'F758CE318D77295D',
+        key_server  => 'pgp.mit.edu',
+    }
+
+    apt::key { 'key2':
+        ensure      => present,
+        key         => '2B5C1B00',
+        key_server  => 'pgp.mit.edu',
+    }
+
+    apt::key { 'key3':
+        ensure      => present,
+        key         => '0353B12C',
+        key_server  => 'pgp.mit.edu',
+    }
+}
+
 class cassandra {
-  include xfstools
-  include java
+    include apt
+    require pgpkeys
+    require java
+    require xsftools
 
-  package {"wget":
-    ensure => latest
-  }
+    apt::source { 'cassandra':
+      location          => 'http://www.apache.org/dist/cassandra/debian/',
+      release           => '12x',
+      repos             => 'main',
+      required_packages => 'debian-keyring debian-archive-keyring',
+      key               => '4BD736A82B5C1B00',
+      key_server        => 'pgp.mit.edu',
+      notify            => Package ['cassandra'],
 
-  file {"/etc/init/cassandra.conf":
-    source => "puppet:///modules/cassandra/cassandra.upstart",
-    owner  => root
-  }
-  
-  exec {"download-cassandra":
-    cwd => "/tmp",
-    command => "wget http://download.nextag.com/apache/cassandra/1.2.19/apache-cassandra-1.2.19-bin.tar.gz",
-    creates => "/tmp/apache-cassandra-1.2.19-bin.tar.gz",
-    require => [Package["wget"], File["/etc/init/cassandra.conf"]]
-  }
+    }
 
-  exec {"install-cassandra":
-    cwd => "/tmp",
-    command => "tar -xzf apache-cassandra-1.2.19-bin.tar.gz; mv apache-cassandra-1.2.19 /usr/local/cassandra",
-    require => Exec["download-cassandra"],
-    creates => "/usr/local/cassandra/bin/cassandra"
-  }
+    package { 'cassandra':
+      ensure => installed,
+    }
 
-  service {"cassandra":
-    ensure => running,
-    require => Exec["install-cassandra"]
-  }
 }
 
 node cassandraengine inherits basenode {
   include cassandra
-  
+
   package {["python-pip", "python-dev", "python-nose"]:
     ensure => installed
   }

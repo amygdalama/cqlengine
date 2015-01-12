@@ -37,6 +37,12 @@ Vagrant::Config.run do |config|
   # Provision with puppet
   config.vm.provision :shell, :inline => "apt-get update"
   
+  config.vm.provision :shell do |shell|
+    shell.inline = "mkdir -p /etc/puppet/modules;
+                    puppet module install puppetlabs-stdlib --force;
+                    puppet module install puppetlabs-apt --force"
+  end
+
   config.vm.provision :puppet, :options => ['--verbose', '--debug'] do |puppet|
     puppet.facter = {'hostname' => 'cassandraengine'}
     # puppet.manifests_path = "puppet/manifests"
